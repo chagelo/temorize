@@ -1,0 +1,102 @@
+[
+  {
+    "id": "rust_001",
+    "topic": "rust",
+    "topic_display_name": "Rust",
+    "content_type": "concept",
+    "presentation_mode": "question",
+    "prompt": "为什么这里不能把 &str 直接当成 str 拿出来？",
+    "answer": "因为这样会试图按值拿出 str，而 str 是 DST，编译期大小未知。",
+    "source": "Rust note: str / &str / String"
+  },
+  {
+    "id": "rust_002",
+    "topic": "rust",
+    "topic_display_name": "Rust",
+    "content_type": "error",
+    "presentation_mode": "question",
+    "prompt": "这段 map(|&x| x) 报错的核心原因是什么？",
+    "answer": "这里把 &str 解引用成了 str，str 是 DST，不能按值直接拿出来。",
+    "source": "Rust note: split_whitespace map error"
+  },
+  {
+    "id": "rust_003",
+    "topic": "rust",
+    "topic_display_name": "Rust",
+    "content_type": "raw_fragment",
+    "presentation_mode": "raw_note",
+    "prompt": "String 实现了 Deref，所以可以从 &String 得到 &str。",
+    "answer": "",
+    "source": "Rust note: Deref"
+  },
+  {
+    "id": "eng_vocab_001",
+    "topic": "english-vocab",
+    "topic_display_name": "English Vocab",
+    "content_type": "vocab",
+    "presentation_mode": "question",
+    "prompt": "tap into 更接近什么意思？",
+    "answer": "利用、发掘、借助（资源 / 潜力 / 人才）。",
+    "source": "English vocab note"
+  },
+  {
+    "id": "eng_vocab_002",
+    "topic": "english-vocab",
+    "topic_display_name": "English Vocab",
+    "content_type": "vocab",
+    "presentation_mode": "question",
+    "prompt": "catch on 常见的两个意思是什么？",
+    "answer": "理解领会；流行。",
+    "source": "English vocab note"
+  },
+  {
+    "id": "eng_vocab_003",
+    "topic": "english-vocab",
+    "topic_display_name": "English Vocab",
+    "content_type": "raw_fragment",
+    "presentation_mode": "raw_note",
+    "prompt": "walk out on someone = 抛弃某人 / 离开某人（感情里）",
+    "answer": "",
+    "source": "English vocab note"
+  },
+  {
+    "id": "eng_vocab_004",
+    "topic": "english-vocab",
+    "topic_display_name": "English Vocab",
+    "content_type": "raw_fragment",
+    "presentation_mode": "raw_note",
+    "prompt": "get it together = 振作起来 / 冷静下来 / 把自己状态整理好",
+    "answer": "",
+    "source": "English vocab note"
+  },
+  {
+    "id": "pron_001",
+    "topic": "english-pronunciation",
+    "topic_display_name": "English Pronunciation",
+    "content_type": "pronunciation",
+    "presentation_mode": "question",
+    "prompt": "of 在口语里常弱读成什么？",
+    "answer": "əv",
+    "source": "Pronunciation note"
+  },
+  {
+    "id": "pron_002",
+    "topic": "english-pronunciation",
+    "topic_display_name": "English Pronunciation",
+    "content_type": "raw_fragment",
+    "presentation_mode": "raw_note",
+    "prompt": "you -> ya / yə",
+    "answer": "",
+    "source": "Pronunciation note"
+  },
+  {
+    "id": "eng_sentence_001",
+    "topic": "english-sentence",
+    "topic_display_name": "English Sentence",
+    "content_type": "sentence",
+    "presentation_mode": "raw_note",
+    "prompt": "do you know how long it's been since i've grabbed a spoon.",
+    "answer": "",
+    "source": "Sentence note"
+  }
+]
