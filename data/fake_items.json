@@ -5,7 +5,7 @@
     "topic_display_name": "Rust",
     "content_type": "concept",
     "presentation_mode": "question",
-    "prompt": "为什么这里不能把 &str 直接当成 str 拿出来？",
+    "prompt": "为什么 str 不能像普通定长类型那样直接按值拿出来？",
     "answer": "因为这样会试图按值拿出 str，而 str 是 DST，编译期大小未知。",
     "source": "Rust note: str / &str / String"
   },
@@ -15,7 +15,7 @@
     "topic_display_name": "Rust",
     "content_type": "error",
     "presentation_mode": "question",
-    "prompt": "这段 map(|&x| x) 报错的核心原因是什么？",
+    "prompt": "对 input.trim().split_whitespace().map(|&x| x) 这段代码，出现“size 在编译时未知”报错的核心原因是什么？",
     "answer": "这里把 &str 解引用成了 str，str 是 DST，不能按值直接拿出来。",
     "source": "Rust note: split_whitespace map error"
   },

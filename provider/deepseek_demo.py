@@ -33,10 +33,16 @@ Rules:
 - For mode=mixed, you may mix question and raw_note items in one batch.
 - Every item must include note_index using the 1-based position of the source note from the input list.
 - Produce at most one item per source note.
+- Question items must be self-contained and answerable without hidden context.
+- Do not use bare deictic phrasing such as "这里", "这段", or "这个" unless the prompt itself also names the concrete code snippet, sentence fragment, or error context.
+- If a note cannot support a self-contained question, prefer raw_note instead of a vague question.
 - raw_note items may leave answer empty.
 - raw_note items must keep the source note text in prompt; do not leave prompt empty.
 - Return valid JSON only. No markdown fences.
 """
+
+
+DEICTIC_PROMPT_RE = re.compile(r"^\s*(为什么)?\s*(这里|这段|这个|这条|这句|该处|上述|上面)")
 
 
 def parse_args():
@@ -70,20 +76,52 @@ def apply_minimal_fallbacks(bundle, items):
         copy = dict(item)
         note_index = copy.get("note_index")
         presentation_mode = copy.get("presentation_mode")
+        source_note = None
+
+        if isinstance(note_index, int) and 1 <= note_index <= len(bundle["notes"]):
+            source_note = bundle["notes"][note_index - 1]
 
         if (
             presentation_mode == "raw_note"
-            and isinstance(note_index, int)
-            and 1 <= note_index <= len(bundle["notes"])
+            and source_note is not None
             and (not isinstance(copy.get("prompt"), str) or not copy.get("prompt", "").strip())
         ):
-            copy["prompt"] = bundle["notes"][note_index - 1]
+            copy["prompt"] = source_note
 
         if presentation_mode == "raw_note" and copy.get("answer") is None:
             copy["answer"] = ""
 
+        if (
+            presentation_mode == "question"
+            and source_note is not None
+            and not question_prompt_is_self_contained(copy.get("prompt", ""))
+        ):
+            if bundle["mode"] == "question":
+                copy["prompt"] = build_question_fallback_prompt(source_note)
+            else:
+                copy["presentation_mode"] = "raw_note"
+                copy["prompt"] = source_note
+                copy["answer"] = ""
+
         patched.append(copy)
     return patched
+
+
+def question_prompt_is_self_contained(prompt):
+    if not isinstance(prompt, str):
+        return False
+    text = prompt.strip()
+    if not text:
+        return False
+    if DEICTIC_PROMPT_RE.search(text):
+        return False
+    if "这里" in text:
+        return False
+    return True
+
+
+def build_question_fallback_prompt(source_note):
+    return f"根据这条原始笔记，核心结论是什么？\n原始笔记：{source_note}"
 
 
 def normalize_items(bundle, items):

@@ -37,6 +37,7 @@ python3 recall.py --topics english-vocab,english-sentence --mode raw_note --max-
 - filters by topic and session mode
 - tries to avoid consecutive same-topic items in `mixed`
 - stores feedback internally as `positive`, `neutral`, or `negative`
+- expects `question` items to be self-contained; vague prompts should be repaired or downgraded in the provider layer
 
 ## Provider Demo
 

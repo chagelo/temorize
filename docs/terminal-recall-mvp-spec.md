@@ -56,7 +56,7 @@ Deferred:
   "topic_display_name": "Rust",
   "content_type": "concept",
   "presentation_mode": "question",
-  "prompt": "为什么这里不能把 &str 直接当成 str 拿出来？",
+  "prompt": "为什么 str 不能像普通定长类型那样直接按值拿出来？",
   "answer": "因为这样会试图按值拿出 str，而 str 是 DST，编译期大小未知。",
   "source": "Rust note: str / &str / String"
 }
@@ -143,7 +143,7 @@ At the end of the session, show only:
   "topic_display_name": "Rust",
   "content_type": "concept",
   "presentation_mode": "question",
-  "prompt": "为什么这里不能把 &str 直接当成 str 拿出来？",
+  "prompt": "为什么 str 不能像普通定长类型那样直接按值拿出来？",
   "answer": "因为这样会试图按值拿出 str，而 str 是 DST，编译期大小未知。",
   "source": "Rust note: str / &str / String"
 }
@@ -207,7 +207,7 @@ At the end of the session, show only:
 $ recall --topics rust,english-vocab,english-pronunciation --mode mixed --max-items 5
 
 [1/5] [Rust] [question]
-为什么这里不能把 &str 直接当成 str 拿出来？
+为什么 str 不能像普通定长类型那样直接按值拿出来？
 
 j: show  k: remembered  l: fuzzy  ;: skip  q: quit
 

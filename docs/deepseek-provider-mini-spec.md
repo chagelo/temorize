@@ -55,7 +55,7 @@ The provider must return items that fit the current CLI schema.
     "topic_display_name": "Rust",
     "content_type": "concept",
     "presentation_mode": "question",
-    "prompt": "为什么这里不能把 &str 直接当成 str 拿出来？",
+    "prompt": "为什么 str 不能像普通定长类型那样直接按值拿出来？",
     "answer": "因为这样会试图按值拿出 str，而 str 是 DST，编译期大小未知。",
     "source": "provider:deepseek"
   }
@@ -78,6 +78,8 @@ Rules:
 - `presentation_mode=question` requires both `prompt` and `answer`
 - `presentation_mode=raw_note` keeps the original or lightly cleaned note in `prompt`
 - `raw_note` may leave `answer` empty
+- `question` prompts must be self-contained and answerable without hidden context
+- provider should not emit vague prompts such as bare `这里 / 这段 / 这个`
 - output must remain compatible with `recall.py` without changing the current interaction model
 - `id` should be generated predictably by the provider layer using:
   - `topic + "_" + note_index + "_" + presentation_mode`
@@ -92,6 +94,9 @@ Keep the first provider implementation narrow:
 - For V1, each source note should produce at most one output item
 - Do not do ranking, scoring, summarization, or multi-item reasoning
 - Do not try to infer spaced-repetition metadata in this phase
+- If a generated `question` is still vague after prompting, the provider should:
+  - downgrade it to `raw_note` for `mixed` or `raw_note` requests
+  - repair it into a self-contained fallback prompt for `question` requests
 
 ## Prompting Requirement
 
@@ -103,6 +108,8 @@ The provider prompt should instruct DeepSeek to:
 - include `note_index` for every returned item
 - preserve factual meaning from the original note
 - avoid inventing extra facts not present in the note
+- avoid unresolved references like `这里 / 这段 / 这个`
+- include a concrete anchor when a question depends on code, a sentence fragment, or an error context
 
 ## Secret Handling
 
