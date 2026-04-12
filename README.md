@@ -33,6 +33,7 @@ python3 recall.py --topics english-vocab,english-sentence --mode raw_note --max-
 - `--mode`: `question | raw_note | mixed`
 - `--max-items`: maximum number of items to show
 - `--items-file`: optional JSON file path, defaults to `data/fake_items.json`
+- `--feedback-log-file`: optional JSONL path for persisted session feedback, defaults to `~/.temorize/sessions.jsonl`
 
 ## Current Behavior
 
@@ -41,6 +42,7 @@ python3 recall.py --topics english-vocab,english-sentence --mode raw_note --max-
 - tries to avoid consecutive same-topic items in `mixed`
 - stores feedback internally as `positive`, `neutral`, or `negative`
 - expects `question` items to be self-contained; vague prompts should be repaired or downgraded in the provider layer
+- appends submitted feedback results to a local JSONL log at session end
 
 ## Provider Demo
 
@@ -76,6 +78,22 @@ Secrets:
 - keep `DEEPSEEK_API_KEY` only in local environment variables
 - use `.env.example` only as a setup reference
 - never commit real keys
+
+## Feedback Persistence
+
+Session feedback is now appended to a local JSONL file by default:
+
+```text
+~/.temorize/sessions.jsonl
+```
+
+Each appended record currently contains:
+- `timestamp`
+- `item_id`
+- `topic`
+- `result`
+
+This is intentionally minimal. It does not yet drive replay avoidance, weighting, or scheduling.
 
 ## Local Note Source
 

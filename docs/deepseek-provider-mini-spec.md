@@ -56,9 +56,10 @@ The provider must return items that fit the current CLI schema.
 ```json
 [
   {
-    "id": "rust_generated_001",
+    "id": "rust_001_question",
     "topic": "rust",
     "topic_display_name": "Rust",
+    "note_index": 1,
     "content_type": "concept",
     "presentation_mode": "question",
     "prompt": "为什么 str 不能像普通定长类型那样直接按值拿出来？",
