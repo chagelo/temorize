@@ -34,6 +34,7 @@ Rules:
 - Every item must include note_index using the 1-based position of the source note from the input list.
 - Produce at most one item per source note.
 - raw_note items may leave answer empty.
+- raw_note items must keep the source note text in prompt; do not leave prompt empty.
 - Return valid JSON only. No markdown fences.
 """
 
@@ -61,6 +62,28 @@ def extract_json_object(text):
 
 def sanitize_topic(topic):
     return re.sub(r"[^a-zA-Z0-9_-]+", "-", topic).strip("-").lower()
+
+
+def apply_minimal_fallbacks(bundle, items):
+    patched = []
+    for item in items:
+        copy = dict(item)
+        note_index = copy.get("note_index")
+        presentation_mode = copy.get("presentation_mode")
+
+        if (
+            presentation_mode == "raw_note"
+            and isinstance(note_index, int)
+            and 1 <= note_index <= len(bundle["notes"])
+            and (not isinstance(copy.get("prompt"), str) or not copy.get("prompt", "").strip())
+        ):
+            copy["prompt"] = bundle["notes"][note_index - 1]
+
+        if presentation_mode == "raw_note" and copy.get("answer") is None:
+            copy["answer"] = ""
+
+        patched.append(copy)
+    return patched
 
 
 def normalize_items(bundle, items):
@@ -184,7 +207,8 @@ def call_deepseek(bundle):
 
     content = body["choices"][0]["message"]["content"]
     parsed = extract_json_object(content)
-    items = validate_item_shape(bundle, parsed)
+    raw_items = parsed.get("items") if isinstance(parsed, dict) else parsed
+    items = validate_item_shape(bundle, {"items": apply_minimal_fallbacks(bundle, raw_items if isinstance(raw_items, list) else [])})
     return normalize_items(bundle, items)
 
 
