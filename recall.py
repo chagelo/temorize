@@ -27,11 +27,16 @@ def parse_args():
         default=5,
         help="Maximum number of items to show in this session.",
     )
+    parser.add_argument(
+        "--items-file",
+        default=str(DATA_PATH),
+        help="Path to the JSON item file to consume.",
+    )
     return parser.parse_args()
 
 
-def load_items():
-    with DATA_PATH.open("r", encoding="utf-8") as fh:
+def load_items(items_file):
+    with Path(items_file).open("r", encoding="utf-8") as fh:
         return json.load(fh)
 
 
@@ -129,7 +134,7 @@ def print_summary(shown, feedback_counts, topics_seen):
 def main():
     args = parse_args()
     topics = args.topics.split(",")
-    items = filter_items(load_items(), topics, args.mode)
+    items = filter_items(load_items(args.items_file), topics, args.mode)
 
     if not items:
         print("No items matched the selected topics and mode.")

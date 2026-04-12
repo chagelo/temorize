@@ -1,0 +1,129 @@
+# DeepSeek Provider Mini Spec
+
+## Goal
+
+Replace the fake-data-only path with a minimal real-content generation chain:
+
+`raw notes -> DeepSeek -> schema-compatible item JSON -> recall.py`
+
+This phase does not change the terminal session shape, keybindings, or summary model.
+
+## Non-Goals
+
+- No new UI mode
+- No menu bar or ambient trigger work
+- No advanced ranking or scheduling
+- No multi-step note analysis pipeline
+- No secret storage in repo
+
+## Inputs
+
+Provider input should stay small and explicit.
+
+```json
+{
+  "topic": "rust",
+  "topic_display_name": "Rust",
+  "mode": "question",
+  "notes": [
+    "String 实现了 Deref，所以可以从 &String 得到 &str。",
+    "map(|&x| x) 这里会把 &str 解成 str，str 是 DST。"
+  ]
+}
+```
+
+Fields:
+- `topic`: stable internal topic id
+- `topic_display_name`: user-facing topic label
+- `mode`: target output style, one of `question | raw_note | mixed`
+- `notes`: 3 to 5 raw notes for the initial validation pass
+
+Mode notes:
+- `mode=question`: output should only contain `presentation_mode=question`
+- `mode=raw_note`: output should only contain `presentation_mode=raw_note`
+- `mode=mixed`: output may contain both `question` and `raw_note` items in the same batch
+
+## Output Contract
+
+The provider must return items that fit the current CLI schema.
+
+```json
+[
+  {
+    "id": "rust_generated_001",
+    "topic": "rust",
+    "topic_display_name": "Rust",
+    "content_type": "concept",
+    "presentation_mode": "question",
+    "prompt": "为什么这里不能把 &str 直接当成 str 拿出来？",
+    "answer": "因为这样会试图按值拿出 str，而 str 是 DST，编译期大小未知。",
+    "source": "provider:deepseek"
+  }
+]
+```
+
+Required fields:
+- `id`
+- `topic`
+- `topic_display_name`
+- `content_type`
+- `presentation_mode`
+- `prompt`
+- `answer`
+- `source`
+
+Rules:
+- `presentation_mode=question` requires both `prompt` and `answer`
+- `presentation_mode=raw_note` keeps the original or lightly cleaned note in `prompt`
+- `raw_note` may leave `answer` empty
+- output must remain compatible with `recall.py` without changing the current interaction model
+- `id` should be generated predictably by the provider layer using:
+  - `topic + "_" + note_index + "_" + presentation_mode`
+  - example: `rust_001_question`
+
+## V1 Provider Behavior
+
+Keep the first provider implementation narrow:
+
+- If the note is suitable for recall questioning, generate a `question` item
+- If the note is already useful as-is, keep it as `raw_note`
+- Do not do ranking, scoring, summarization, or multi-item reasoning
+- Do not try to infer spaced-repetition metadata in this phase
+
+## Prompting Requirement
+
+The provider prompt should instruct DeepSeek to:
+
+- stay within the supplied topic
+- choose either `question` or `raw_note`
+- return JSON only
+- preserve factual meaning from the original note
+- avoid inventing extra facts not present in the note
+
+## Secret Handling
+
+- API key must only come from local environment variables
+- recommended variable name: `DEEPSEEK_API_KEY`
+- repo may contain setup guidance only
+- repo must not contain any real key value
+
+## V1 Validation Flow
+
+1. Prepare 3 to 5 real notes for one topic
+2. Call DeepSeek through a provider script
+3. Save returned items as JSON
+4. Run `recall.py` against that JSON shape
+5. Check:
+   - schema compatibility
+   - item quality
+   - whether question/raw-note selection feels reasonable
+
+## Immediate Build Target
+
+The next implementation step should be a tiny provider demo that:
+
+- reads local input notes
+- reads `DEEPSEEK_API_KEY` from the environment
+- calls DeepSeek once
+- writes schema-compatible JSON
+- can be used in place of `data/fake_items.json` for a manual test run
