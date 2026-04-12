@@ -15,6 +15,7 @@ Return JSON only in the form:
 {
   "items": [
     {
+      "note_index": 1,
       "content_type": "concept|vocab|sentence|raw_fragment|pronunciation|error",
       "presentation_mode": "question|raw_note",
       "prompt": "...",
@@ -30,6 +31,8 @@ Rules:
 - For mode=question, every item must be question.
 - For mode=raw_note, every item must be raw_note.
 - For mode=mixed, you may mix question and raw_note items in one batch.
+- Every item must include note_index using the 1-based position of the source note from the input list.
+- Produce at most one item per source note.
 - raw_note items may leave answer empty.
 - Return valid JSON only. No markdown fences.
 """
@@ -67,13 +70,15 @@ def normalize_items(bundle, items):
     source_default = f"provider:deepseek:{topic}"
     topic_slug = sanitize_topic(topic)
 
-    for index, item in enumerate(items, start=1):
+    for item in items:
+        note_index = item["note_index"]
         presentation_mode = item["presentation_mode"]
         normalized.append(
             {
-                "id": f"{topic_slug}_{index:03d}_{presentation_mode}",
+                "id": f"{topic_slug}_{note_index:03d}_{presentation_mode}",
                 "topic": topic,
                 "topic_display_name": topic_display_name,
+                "note_index": note_index,
                 "content_type": item["content_type"],
                 "presentation_mode": presentation_mode,
                 "prompt": item["prompt"],
@@ -82,6 +87,59 @@ def normalize_items(bundle, items):
             }
         )
     return normalized
+
+
+def validate_item_shape(bundle, parsed):
+    if not isinstance(parsed, dict):
+        raise RuntimeError("Provider output must be a JSON object.")
+
+    items = parsed.get("items")
+    if not isinstance(items, list):
+        raise RuntimeError("Provider output must contain an 'items' list.")
+
+    max_note_index = len(bundle["notes"])
+    allowed_modes = {"question", "raw_note"}
+    seen_pairs = set()
+
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            raise RuntimeError(f"Item #{index} is not a JSON object.")
+
+        for field in ("note_index", "content_type", "presentation_mode", "prompt"):
+            if field not in item:
+                raise RuntimeError(f"Item #{index} is missing required field '{field}'.")
+
+        note_index = item["note_index"]
+        if not isinstance(note_index, int) or note_index < 1 or note_index > max_note_index:
+            raise RuntimeError(f"Item #{index} has invalid note_index '{note_index}'.")
+
+        presentation_mode = item["presentation_mode"]
+        if presentation_mode not in allowed_modes:
+            raise RuntimeError(
+                f"Item #{index} has invalid presentation_mode '{presentation_mode}'."
+            )
+
+        if bundle["mode"] == "question" and presentation_mode != "question":
+            raise RuntimeError(f"Item #{index} must be question mode for this request.")
+        if bundle["mode"] == "raw_note" and presentation_mode != "raw_note":
+            raise RuntimeError(f"Item #{index} must be raw_note mode for this request.")
+
+        if not isinstance(item["prompt"], str) or not item["prompt"].strip():
+            raise RuntimeError(f"Item #{index} has an empty prompt.")
+
+        if presentation_mode == "question":
+            answer = item.get("answer")
+            if not isinstance(answer, str) or not answer.strip():
+                raise RuntimeError(f"Question item #{index} must include a non-empty answer.")
+
+        pair = (note_index, presentation_mode)
+        if pair in seen_pairs:
+            raise RuntimeError(
+                f"Duplicate output for note_index={note_index} and mode={presentation_mode}."
+            )
+        seen_pairs.add(pair)
+
+    return items
 
 
 def call_deepseek(bundle):
@@ -126,7 +184,8 @@ def call_deepseek(bundle):
 
     content = body["choices"][0]["message"]["content"]
     parsed = extract_json_object(content)
-    return normalize_items(bundle, parsed["items"])
+    items = validate_item_shape(bundle, parsed)
+    return normalize_items(bundle, items)
 
 
 def main():

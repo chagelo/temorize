@@ -66,6 +66,7 @@ Required fields:
 - `id`
 - `topic`
 - `topic_display_name`
+- `note_index`
 - `content_type`
 - `presentation_mode`
 - `prompt`
@@ -73,6 +74,7 @@ Required fields:
 - `source`
 
 Rules:
+- `note_index` must point to the 1-based position of the source note in the provider input list
 - `presentation_mode=question` requires both `prompt` and `answer`
 - `presentation_mode=raw_note` keeps the original or lightly cleaned note in `prompt`
 - `raw_note` may leave `answer` empty
@@ -87,6 +89,7 @@ Keep the first provider implementation narrow:
 
 - If the note is suitable for recall questioning, generate a `question` item
 - If the note is already useful as-is, keep it as `raw_note`
+- For V1, each source note should produce at most one output item
 - Do not do ranking, scoring, summarization, or multi-item reasoning
 - Do not try to infer spaced-repetition metadata in this phase
 
@@ -97,6 +100,7 @@ The provider prompt should instruct DeepSeek to:
 - stay within the supplied topic
 - choose either `question` or `raw_note`
 - return JSON only
+- include `note_index` for every returned item
 - preserve factual meaning from the original note
 - avoid inventing extra facts not present in the note
 
@@ -117,6 +121,7 @@ The provider prompt should instruct DeepSeek to:
    - schema compatibility
    - item quality
    - whether question/raw-note selection feels reasonable
+   - invalid model output is rejected before it reaches the session layer
 
 ## Immediate Build Target
 
