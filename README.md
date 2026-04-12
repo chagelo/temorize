@@ -7,7 +7,9 @@
 - `docs/terminal-recall-mvp-spec.md`: current MVP spec
 - `docs/deepseek-provider-mini-spec.md`: next-phase provider spec
 - `data/fake_items.json`: fake dataset used for the prototype
+- `data/example_local_notes.md`: example local note file for source-adapter testing
 - `recall.py`: minimal CLI demo
+- `provider/local_notes_to_input.py`: local markdown/text note-source adapter
 
 ## Run
 
@@ -50,8 +52,15 @@ The next-phase provider path keeps the current CLI shape and only swaps the item
 Example:
 
 ```bash
+python3 provider/local_notes_to_input.py \
+  --source-file data/example_local_notes.md \
+  --topic rust \
+  --topic-display-name Rust \
+  --mode mixed \
+  --output-file data/local_provider_input.json
+
 python3 provider/deepseek_demo.py \
-  --input-file data/sample_provider_notes.json \
+  --input-file data/local_provider_input.json \
   --output-file data/generated_items.json
 
 python3 recall.py \
@@ -66,6 +75,28 @@ Secrets:
 - keep `DEEPSEEK_API_KEY` only in local environment variables
 - use `.env.example` only as a setup reference
 - never commit real keys
+
+## Local Note Source
+
+The smallest real note-source path is a local `.md` or `.txt` file.
+
+`provider/local_notes_to_input.py`:
+- reads one local note file
+- extracts bullet items and short paragraphs as note candidates
+- writes the existing provider input JSON shape
+- keeps the rest of the chain unchanged
+
+Example:
+
+```bash
+python3 provider/local_notes_to_input.py \
+  --source-file /path/to/your/notes.md \
+  --topic rust \
+  --topic-display-name Rust \
+  --mode mixed \
+  --max-notes 5 \
+  --output-file data/local_provider_input.json
+```
 
 ## Keybindings
 
