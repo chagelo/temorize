@@ -207,8 +207,17 @@ def call_deepseek(bundle):
 
     content = body["choices"][0]["message"]["content"]
     parsed = extract_json_object(content)
-    raw_items = parsed.get("items") if isinstance(parsed, dict) else parsed
-    items = validate_item_shape(bundle, {"items": apply_minimal_fallbacks(bundle, raw_items if isinstance(raw_items, list) else [])})
+    if not isinstance(parsed, dict):
+        raise RuntimeError("Provider output must be a JSON object.")
+
+    if "items" not in parsed:
+        raise RuntimeError("Provider output is missing required top-level field 'items'.")
+
+    raw_items = parsed["items"]
+    if not isinstance(raw_items, list):
+        raise RuntimeError("Provider output field 'items' must be a list.")
+
+    items = validate_item_shape(bundle, {"items": apply_minimal_fallbacks(bundle, raw_items)})
     return normalize_items(bundle, items)
 
 
