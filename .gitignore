@@ -4,3 +4,5 @@ data/generated_items.json
 data/generated_items.live.json
 data/local_provider_input.json
 data/local_generated_items.json
+data/vault_provider_input.json
+data/vault_generated_items.json

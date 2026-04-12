@@ -8,6 +8,7 @@
 - `docs/deepseek-provider-mini-spec.md`: next-phase provider spec
 - `data/fake_items.json`: fake dataset used for the prototype
 - `data/example_local_notes.md`: example local note file for source-adapter testing
+- `data/example_vault/`: example markdown vault for directory-adapter testing
 - `recall.py`: minimal CLI demo
 - `provider/local_notes_to_input.py`: local markdown/text note-source adapter
 
@@ -78,15 +79,17 @@ Secrets:
 
 ## Local Note Source
 
-The smallest real note-source path is a local `.md` or `.txt` file.
+The local note-source adapter now supports:
+- one local `.md` or `.txt` file via `--source-file`
+- one local markdown directory / vault via `--source-dir`
 
 `provider/local_notes_to_input.py`:
-- reads one local note file
+- reads one local note file or scans one markdown directory
 - extracts bullet items and short paragraphs as note candidates
 - writes the existing provider input JSON shape
 - keeps the rest of the chain unchanged
 
-Example:
+Single-file example:
 
 ```bash
 python3 provider/local_notes_to_input.py \
@@ -97,6 +100,26 @@ python3 provider/local_notes_to_input.py \
   --max-notes 5 \
   --output-file data/local_provider_input.json
 ```
+
+Directory / vault example:
+
+```bash
+python3 provider/local_notes_to_input.py \
+  --source-dir data/example_vault \
+  --subdir rust \
+  --topic rust \
+  --topic-display-name Rust \
+  --mode mixed \
+  --max-files 10 \
+  --max-notes 5 \
+  --output-file data/vault_provider_input.json
+```
+
+Directory mode defaults:
+- recursively scans `.md` files
+- skips `.obsidian/`
+- does not parse frontmatter, tags, or wiki-links
+- uses `--subdir` or `--include-glob` only for scope control
 
 ## Keybindings
 

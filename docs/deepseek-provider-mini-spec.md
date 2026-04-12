@@ -38,7 +38,11 @@ Fields:
 - `mode`: target output style, one of `question | raw_note | mixed`
 - `notes`: 3 to 5 raw notes for the initial validation pass
 
-For the first real note-source integration, these fields may be produced by a thin local adapter over one markdown/text note file. The adapter should only normalize raw notes into this bundle shape; it should not contain recall logic.
+For the first real note-source integrations, these fields may be produced by a thin local adapter over:
+- one markdown/text note file
+- or one local markdown directory / vault
+
+The adapter should only normalize raw notes into this bundle shape; it should not contain recall logic.
 
 Mode notes:
 - `mode=question`: output should only contain `presentation_mode=question`
@@ -142,9 +146,10 @@ The next implementation step should be a tiny provider demo that:
 - writes schema-compatible JSON
 - can be used in place of `data/fake_items.json` for a manual test run
 
-The first real-source adapter can stay equally small:
+The real-source adapters should stay equally small:
 
-- read one local `.md` or `.txt` note file
+- support one local `.md` / `.txt` file or one local markdown directory
+- in directory mode, recurse through `.md` files, skip `.obsidian/`, and rely on scope-control flags instead of smart filtering
 - extract bullet items and short paragraphs as raw notes
 - write a single provider-input bundle
 - feed that bundle into the existing DeepSeek demo without changing `recall.py`
