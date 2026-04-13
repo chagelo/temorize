@@ -2,14 +2,14 @@
 
 ## Product Definition
 
-Terminal Recall is a terminal-native recall session tool. The user opens a dedicated terminal window, runs a CLI command, and reviews a short sequence of items drawn from selected topics. Each item is surfaced either as a question or as a raw note fragment.
+Terminal Recall is a terminal-native recall session tool. The user opens a dedicated terminal window, runs a CLI command, and reviews a short sequence of items drawn from selected topics. Each item is surfaced either as a question, a fact-style knowledge point, or a raw note fragment.
 
 ## V1 Scope
 
 Included:
 - Dedicated terminal session started explicitly by the user
 - Topic selection via CLI
-- Session modes: `question`, `raw_note`, `mixed`
+- Session modes: `question`, `raw_note`, `fact`, `mixed`
 - Limited session size via `max_items`
 - One item shown at a time
 - Lightweight keyboard feedback
@@ -28,7 +28,7 @@ Excluded:
 
 - Let the user complete a light recall session in 3 to 5 minutes
 - Support multiple active topics in one session
-- Support both quiz-like recall and direct note resurfacing
+- Support quiz-like recall, direct knowledge-point resurfacing, and raw note resurfacing
 - Be simple enough to prototype with fake data first
 
 ## Core CLI
@@ -39,7 +39,7 @@ recall --topics rust,english-vocab --mode mixed --max-items 5
 
 Parameters:
 - `topics`: comma-separated topic list
-- `mode`: `question | raw_note | mixed`
+- `mode`: `question | raw_note | fact | mixed`
 - `max-items`: maximum number of items in the session
 
 Deferred:
@@ -66,9 +66,9 @@ Field notes:
 - `topic`: stable internal topic id
 - `topic_display_name`: optional user-facing topic label
 - `content_type`: what the item fundamentally is, such as `concept`, `vocab`, `sentence`, `raw_fragment`
-- `presentation_mode`: how the item should be surfaced by default, such as `question` or `raw_note`
+- `presentation_mode`: how the item should be surfaced by default, such as `question`, `fact`, or `raw_note`
 - `prompt`: either a question or the raw note text
-- `answer`: empty for raw-note items
+- `answer`: empty for raw-note and fact items
 - `source`: lightweight origin reference
 
 ## Selection Rules
@@ -77,7 +77,8 @@ V1 keeps selection intentionally simple:
 - Only select items from the requested `topics`
 - `mode=question` only selects items with `presentation_mode=question`
 - `mode=raw_note` only selects items with `presentation_mode=raw_note`
-- `mode=mixed` may return either kind
+- `mode=fact` only selects items with `presentation_mode=fact`
+- `mode=mixed` may return any supported presentation mode
 - In `mixed`, try to avoid consecutive items from the same topic
 - No advanced weighting or spaced repetition in V1
 
@@ -125,6 +126,14 @@ After showing answer:
 - `;`: skip
 - `q`: quit
 
+### Fact Mode
+
+- `j`: next
+- `k`: useful
+- `l`: neutral
+- `;`: skip
+- `q`: quit
+
 ## Summary Output
 
 At the end of the session, show only:
@@ -155,9 +164,9 @@ At the end of the session, show only:
   "topic": "english-vocab",
   "topic_display_name": "English Vocab",
   "content_type": "vocab",
-  "presentation_mode": "question",
-  "prompt": "tap into 更接近什么意思？",
-  "answer": "利用、发掘、借助（资源 / 潜力 / 人才）",
+  "presentation_mode": "fact",
+  "prompt": "tap into = 利用、发掘、借助（资源 / 潜力 / 人才）",
+  "answer": "",
   "source": "English vocab note"
 }
 ```
@@ -181,9 +190,9 @@ At the end of the session, show only:
   "topic": "english-pronunciation",
   "topic_display_name": "English Pronunciation",
   "content_type": "pronunciation",
-  "presentation_mode": "question",
-  "prompt": "of 在口语里常弱读成什么？",
-  "answer": "əv",
+  "presentation_mode": "fact",
+  "prompt": "of -> əv",
+  "answer": "",
   "source": "Pronunciation note"
 }
 ```

@@ -36,7 +36,7 @@ def parse_args():
     )
     parser.add_argument(
         "--mode",
-        choices=["question", "raw_note", "mixed"],
+        choices=["question", "raw_note", "fact", "mixed"],
         default="mixed",
         help="Target provider mode for the extracted notes.",
     )

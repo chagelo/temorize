@@ -19,7 +19,7 @@ def parse_args():
     )
     parser.add_argument(
         "--mode",
-        choices=["question", "raw_note", "mixed"],
+        choices=["question", "raw_note", "fact", "mixed"],
         default="mixed",
         help="How items should be presented in this session.",
     )

@@ -34,9 +34,9 @@
     "topic": "english-vocab",
     "topic_display_name": "English Vocab",
     "content_type": "vocab",
-    "presentation_mode": "question",
-    "prompt": "tap into 更接近什么意思？",
-    "answer": "利用、发掘、借助（资源 / 潜力 / 人才）。",
+    "presentation_mode": "fact",
+    "prompt": "tap into = 利用、发掘、借助（资源 / 潜力 / 人才）",
+    "answer": "",
     "source": "English vocab note"
   },
   {
@@ -44,9 +44,9 @@
     "topic": "english-vocab",
     "topic_display_name": "English Vocab",
     "content_type": "vocab",
-    "presentation_mode": "question",
-    "prompt": "catch on 常见的两个意思是什么？",
-    "answer": "理解领会；流行。",
+    "presentation_mode": "fact",
+    "prompt": "catch on = 理解领会；流行",
+    "answer": "",
     "source": "English vocab note"
   },
   {
@@ -74,9 +74,9 @@
     "topic": "english-pronunciation",
     "topic_display_name": "English Pronunciation",
     "content_type": "pronunciation",
-    "presentation_mode": "question",
-    "prompt": "of 在口语里常弱读成什么？",
-    "answer": "əv",
+    "presentation_mode": "fact",
+    "prompt": "of -> əv",
+    "answer": "",
     "source": "Pronunciation note"
   },
   {

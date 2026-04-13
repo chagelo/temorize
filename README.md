@@ -30,7 +30,7 @@ python3 recall.py --topics english-vocab,english-sentence --mode raw_note --max-
 ## CLI Parameters
 
 - `--topics`: comma-separated topic list
-- `--mode`: `question | raw_note | mixed`
+- `--mode`: `question | raw_note | fact | mixed`
 - `--max-items`: maximum number of items to show
 - `--items-file`: optional JSON file path, defaults to `data/fake_items.json`
 - `--feedback-log-file`: optional JSONL path for persisted session feedback, defaults to `~/.temorize/sessions.jsonl`
@@ -43,6 +43,7 @@ python3 recall.py --topics english-vocab,english-sentence --mode raw_note --max-
 - stores feedback internally as `positive`, `neutral`, or `negative`
 - expects `question` items to be self-contained; vague prompts should be repaired or downgraded in the provider layer
 - appends submitted feedback results to a local JSONL log at session end
+- supports `fact` items for directly resurfacing short knowledge points without wrapping them as questions
 
 ## Provider Demo
 
@@ -150,6 +151,14 @@ Question items:
 - `q`: quit
 
 Raw-note items:
+
+- `j`: next
+- `k`: useful
+- `l`: neutral
+- `;`: skip
+- `q`: quit
+
+Fact items currently reuse the raw-note interaction:
 
 - `j`: next
 - `k`: useful
