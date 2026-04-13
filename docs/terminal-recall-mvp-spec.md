@@ -218,7 +218,7 @@ $ recall --topics rust,english-vocab,english-pronunciation --mode mixed --max-it
 [1/5] [Rust] [question]
 为什么 str 不能像普通定长类型那样直接按值拿出来？
 
-j: show  k: remembered  l: fuzzy  ;: skip  q: quit
+j: show  k: remembered  l: fuzzy  ;: forgot  q: quit
 
 > j
 因为这样会试图按值拿出 str，而 str 是 DST，编译期大小未知。
