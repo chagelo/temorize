@@ -19,7 +19,7 @@ def parse_args():
     )
     parser.add_argument(
         "--mode",
-        choices=["question", "raw_note", "fact", "mixed"],
+        choices=["question", "knowledge", "mixed"],
         default="mixed",
         help="How items should be presented in this session.",
     )
@@ -44,7 +44,17 @@ def parse_args():
 
 def load_items(items_file):
     with Path(items_file).open("r", encoding="utf-8") as fh:
-        return json.load(fh)
+        return normalize_items(json.load(fh))
+
+
+def normalize_items(items):
+    normalized = []
+    for item in items:
+        copy = dict(item)
+        if copy.get("presentation_mode") in {"raw_note", "fact"}:
+            copy["presentation_mode"] = "knowledge"
+        normalized.append(copy)
+    return normalized
 
 
 def filter_items(items, topics, mode):
@@ -109,7 +119,7 @@ def ask_question_item(item):
             return "negative"
 
 
-def ask_raw_note_item():
+def ask_knowledge_item():
     print("j: next  k: useful  l: neutral  ;: skip  q: quit")
     while True:
         try:
@@ -183,7 +193,7 @@ def main():
         if item["presentation_mode"] == "question":
             result = ask_question_item(item)
         else:
-            result = ask_raw_note_item()
+            result = ask_knowledge_item()
 
         if result == "quit":
             break

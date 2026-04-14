@@ -2,14 +2,14 @@
 
 ## Product Definition
 
-Terminal Recall is a terminal-native recall session tool. The user opens a dedicated terminal window, runs a CLI command, and reviews a short sequence of items drawn from selected topics. Each item is surfaced either as a question, a fact-style knowledge point, or a raw note fragment.
+Terminal Recall is a terminal-native recall session tool. The user opens a dedicated terminal window, runs a CLI command, and reviews a short sequence of items drawn from selected topics. Each item is surfaced either as a question or as a direct knowledge point.
 
 ## V1 Scope
 
 Included:
 - Dedicated terminal session started explicitly by the user
 - Topic selection via CLI
-- Session modes: `question`, `raw_note`, `fact`, `mixed`
+- Session modes: `question`, `knowledge`, `mixed`
 - Limited session size via `max_items`
 - One item shown at a time
 - Lightweight keyboard feedback
@@ -28,7 +28,7 @@ Excluded:
 
 - Let the user complete a light recall session in 3 to 5 minutes
 - Support multiple active topics in one session
-- Support quiz-like recall, direct knowledge-point resurfacing, and raw note resurfacing
+- Support quiz-like recall and direct knowledge-point resurfacing
 - Be simple enough to prototype with fake data first
 
 ## Core CLI
@@ -39,7 +39,7 @@ recall --topics rust,english-vocab --mode mixed --max-items 5
 
 Parameters:
 - `topics`: comma-separated topic list
-- `mode`: `question | raw_note | fact | mixed`
+- `mode`: `question | knowledge | mixed`
 - `max-items`: maximum number of items in the session
 
 Deferred:
@@ -66,9 +66,9 @@ Field notes:
 - `topic`: stable internal topic id
 - `topic_display_name`: optional user-facing topic label
 - `content_type`: what the item fundamentally is, such as `concept`, `vocab`, `sentence`, `raw_fragment`
-- `presentation_mode`: how the item should be surfaced by default, such as `question`, `fact`, or `raw_note`
-- `prompt`: either a question or the raw note text
-- `answer`: empty for raw-note and fact items
+- `presentation_mode`: how the item should be surfaced by default, such as `question` or `knowledge`
+- `prompt`: either a question or the knowledge-point text
+- `answer`: empty for knowledge items
 - `source`: lightweight origin reference
 
 ## Selection Rules
@@ -76,8 +76,7 @@ Field notes:
 V1 keeps selection intentionally simple:
 - Only select items from the requested `topics`
 - `mode=question` only selects items with `presentation_mode=question`
-- `mode=raw_note` only selects items with `presentation_mode=raw_note`
-- `mode=fact` only selects items with `presentation_mode=fact`
+- `mode=knowledge` only selects items with `presentation_mode=knowledge`
 - `mode=mixed` may return any supported presentation mode
 - In `mixed`, try to avoid consecutive items from the same topic
 - No advanced weighting or spaced repetition in V1
@@ -118,15 +117,7 @@ After showing answer:
 - `;`: forgot
 - `q`: quit
 
-### Raw Note Mode
-
-- `j`: next
-- `k`: useful
-- `l`: neutral
-- `;`: skip
-- `q`: quit
-
-### Fact Mode
+### Knowledge Mode
 
 - `j`: next
 - `k`: useful
@@ -164,7 +155,7 @@ At the end of the session, show only:
   "topic": "english-vocab",
   "topic_display_name": "English Vocab",
   "content_type": "vocab",
-  "presentation_mode": "fact",
+  "presentation_mode": "knowledge",
   "prompt": "tap into = 利用、发掘、借助（资源 / 潜力 / 人才）",
   "answer": "",
   "source": "English vocab note"
@@ -177,7 +168,7 @@ At the end of the session, show only:
   "topic": "english-vocab",
   "topic_display_name": "English Vocab",
   "content_type": "raw_fragment",
-  "presentation_mode": "raw_note",
+  "presentation_mode": "knowledge",
   "prompt": "walk out on someone = 抛弃某人 / 离开某人（感情里）",
   "answer": "",
   "source": "English vocab note"
@@ -190,7 +181,7 @@ At the end of the session, show only:
   "topic": "english-pronunciation",
   "topic_display_name": "English Pronunciation",
   "content_type": "pronunciation",
-  "presentation_mode": "fact",
+  "presentation_mode": "knowledge",
   "prompt": "of -> əv",
   "answer": "",
   "source": "Pronunciation note"
@@ -203,7 +194,7 @@ At the end of the session, show only:
   "topic": "english-sentence",
   "topic_display_name": "English Sentence",
   "content_type": "sentence",
-  "presentation_mode": "raw_note",
+  "presentation_mode": "knowledge",
   "prompt": "do you know how long it's been since i've grabbed a spoon.",
   "answer": "",
   "source": "Sentence note"
@@ -227,7 +218,7 @@ k: remembered  l: fuzzy  ;: forgot  q: quit
 
 > k
 
-[2/5] [English Vocab] [raw_note]
+[2/5] [English Vocab] [knowledge]
 walk out on someone = 抛弃某人 / 离开某人（感情里）
 
 j: next  k: useful  l: neutral  ;: skip  q: quit

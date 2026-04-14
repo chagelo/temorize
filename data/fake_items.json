@@ -24,7 +24,7 @@
     "topic": "rust",
     "topic_display_name": "Rust",
     "content_type": "raw_fragment",
-    "presentation_mode": "raw_note",
+    "presentation_mode": "knowledge",
     "prompt": "String 实现了 Deref，所以可以从 &String 得到 &str。",
     "answer": "",
     "source": "Rust note: Deref"
@@ -34,7 +34,7 @@
     "topic": "english-vocab",
     "topic_display_name": "English Vocab",
     "content_type": "vocab",
-    "presentation_mode": "fact",
+    "presentation_mode": "knowledge",
     "prompt": "tap into = 利用、发掘、借助（资源 / 潜力 / 人才）",
     "answer": "",
     "source": "English vocab note"
@@ -44,7 +44,7 @@
     "topic": "english-vocab",
     "topic_display_name": "English Vocab",
     "content_type": "vocab",
-    "presentation_mode": "fact",
+    "presentation_mode": "knowledge",
     "prompt": "catch on = 理解领会；流行",
     "answer": "",
     "source": "English vocab note"
@@ -54,7 +54,7 @@
     "topic": "english-vocab",
     "topic_display_name": "English Vocab",
     "content_type": "raw_fragment",
-    "presentation_mode": "raw_note",
+    "presentation_mode": "knowledge",
     "prompt": "walk out on someone = 抛弃某人 / 离开某人（感情里）",
     "answer": "",
     "source": "English vocab note"
@@ -64,7 +64,7 @@
     "topic": "english-vocab",
     "topic_display_name": "English Vocab",
     "content_type": "raw_fragment",
-    "presentation_mode": "raw_note",
+    "presentation_mode": "knowledge",
     "prompt": "get it together = 振作起来 / 冷静下来 / 把自己状态整理好",
     "answer": "",
     "source": "English vocab note"
@@ -74,7 +74,7 @@
     "topic": "english-pronunciation",
     "topic_display_name": "English Pronunciation",
     "content_type": "pronunciation",
-    "presentation_mode": "fact",
+    "presentation_mode": "knowledge",
     "prompt": "of -> əv",
     "answer": "",
     "source": "Pronunciation note"
@@ -84,7 +84,7 @@
     "topic": "english-pronunciation",
     "topic_display_name": "English Pronunciation",
     "content_type": "raw_fragment",
-    "presentation_mode": "raw_note",
+    "presentation_mode": "knowledge",
     "prompt": "you -> ya / yə",
     "answer": "",
     "source": "Pronunciation note"
@@ -94,7 +94,7 @@
     "topic": "english-sentence",
     "topic_display_name": "English Sentence",
     "content_type": "sentence",
-    "presentation_mode": "raw_note",
+    "presentation_mode": "knowledge",
     "prompt": "do you know how long it's been since i've grabbed a spoon.",
     "answer": "",
     "source": "Sentence note"

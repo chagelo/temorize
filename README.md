@@ -1,6 +1,6 @@
 # temorize
 
-`temorize` is a terminal-native recall prototype. The current MVP is a short CLI session that shows items from selected topics in either `question`, `raw_note`, or `mixed` mode.
+`temorize` is a terminal-native recall prototype. The current MVP is a short CLI session that shows items from selected topics in either `question`, `knowledge`, or `mixed` mode.
 
 ## Current Files
 
@@ -12,25 +12,49 @@
 - `recall.py`: minimal CLI demo
 - `provider/local_notes_to_input.py`: local markdown/text note-source adapter
 
-## Run
+## Quick Run
 
 From the repo root:
 
 ```bash
-python3 recall.py --topics rust,english-vocab --mode mixed --max-items 5
+python3 run_demo.py --source-file data/example_local_notes.md --mode mixed
 ```
 
-Other examples:
+Directory / vault example:
 
 ```bash
-python3 recall.py --topics rust --mode question --max-items 3
-python3 recall.py --topics english-vocab,english-sentence --mode raw_note --max-items 3
+python3 run_demo.py \
+  --source-dir data/example_vault \
+  --subdir rust \
+  --mode mixed \
+  --show-generated
 ```
 
-## CLI Parameters
+The runner keeps most intermediate paths and provider defaults internal. If you still want the lower-level dev chain, it remains available below.
 
+## Runner Parameters
+
+- `--source-file` or `--source-dir`: choose one local note source
+- `--subdir`: optional scope limiter for `--source-dir`
+- `--include-glob`: optional file-pattern scope limiter for `--source-dir`
+- `--topic`: optional topic label; defaults to a slug derived from the source path
+- `--mode`: `question | knowledge | mixed`
+- `--max-items`: maximum number of items to show
+- `--show-generated`: print the generated item JSON before entering the recall session
+
+## Low-Level CLI
+
+The lower-level dev CLI is still available:
+
+```bash
+python3 recall.py --topics rust,english-vocab --mode mixed --max-items 5
+python3 recall.py --topics rust --mode question --max-items 3
+python3 recall.py --topics english-vocab,english-sentence --mode knowledge --max-items 3
+```
+
+Parameters:
 - `--topics`: comma-separated topic list
-- `--mode`: `question | raw_note | fact | mixed`
+- `--mode`: `question | knowledge | mixed`
 - `--max-items`: maximum number of items to show
 - `--items-file`: optional JSON file path, defaults to `data/fake_items.json`
 - `--feedback-log-file`: optional JSONL path for persisted session feedback, defaults to `~/.temorize/sessions.jsonl`
@@ -43,7 +67,7 @@ python3 recall.py --topics english-vocab,english-sentence --mode raw_note --max-
 - stores feedback internally as `positive`, `neutral`, or `negative`
 - expects `question` items to be self-contained; vague prompts should be repaired or downgraded in the provider layer
 - appends submitted feedback results to a local JSONL log at session end
-- supports `fact` items for directly resurfacing short knowledge points without wrapping them as questions
+- supports `knowledge` items for directly resurfacing readable knowledge points without wrapping them as questions
 
 ## Provider Demo
 
@@ -150,15 +174,7 @@ Question items:
 - `;`: forgot
 - `q`: quit
 
-Raw-note items:
-
-- `j`: next
-- `k`: useful
-- `l`: neutral
-- `;`: skip
-- `q`: quit
-
-Fact items currently reuse the raw-note interaction:
+Knowledge items:
 
 - `j`: next
 - `k`: useful

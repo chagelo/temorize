@@ -17,7 +17,7 @@ Return JSON only in the form:
     {
       "note_index": 1,
       "content_type": "concept|vocab|sentence|raw_fragment|pronunciation|error",
-      "presentation_mode": "question|raw_note|fact",
+      "presentation_mode": "question|knowledge",
       "prompt": "...",
       "answer": "...",
       "source": "provider:deepseek"
@@ -29,18 +29,16 @@ Rules:
 - Stay within the given topic and notes.
 - Do not invent facts beyond the notes.
 - For mode=question, every item must be question.
-- For mode=raw_note, every item must be raw_note.
-- For mode=fact, every item must be fact.
-- For mode=mixed, you may mix question, raw_note, and fact items in one batch.
+- For mode=knowledge, every item must be knowledge.
+- For mode=mixed, you may mix question and knowledge items in one batch.
 - Every item must include note_index using the 1-based position of the source note from the input list.
 - Produce at most one item per source note.
 - Question items must be self-contained and answerable without hidden context.
 - Do not use bare deictic phrasing such as "这里", "这段", or "这个" unless the prompt itself also names the concrete code snippet, sentence fragment, or error context.
-- If a note cannot support a self-contained question, prefer raw_note instead of a vague question.
-- raw_note items may leave answer empty.
-- raw_note items must keep the source note text in prompt; do not leave prompt empty.
-- fact items should be used for short knowledge points such as words, phrases, definitions, or concise rules that are better resurfaced directly than asked as a question.
-- fact items may leave answer empty.
+- If a note cannot support a self-contained question, prefer knowledge instead of a vague question.
+- Knowledge items may leave answer empty.
+- Knowledge items must be directly readable, reasonably complete, and useful on their own.
+- Do not output bare titles, placeholders, or fragment-only prompts such as "似然的定义", "会遇到 403 的问题", or "这里需要改一下".
 - Return valid JSON only. No markdown fences.
 """
 
@@ -85,13 +83,13 @@ def apply_minimal_fallbacks(bundle, items):
             source_note = bundle["notes"][note_index - 1]
 
         if (
-            presentation_mode in {"raw_note", "fact"}
+            presentation_mode == "knowledge"
             and source_note is not None
             and (not isinstance(copy.get("prompt"), str) or not copy.get("prompt", "").strip())
         ):
             copy["prompt"] = source_note
 
-        if presentation_mode in {"raw_note", "fact"} and copy.get("answer") is None:
+        if presentation_mode == "knowledge" and copy.get("answer") is None:
             copy["answer"] = ""
 
         if (
@@ -102,8 +100,8 @@ def apply_minimal_fallbacks(bundle, items):
             if bundle["mode"] == "question":
                 copy["prompt"] = build_question_fallback_prompt(source_note)
             else:
-                copy["presentation_mode"] = "raw_note"
-                copy["prompt"] = source_note
+                copy["presentation_mode"] = "knowledge"
+                copy["prompt"] = build_knowledge_fallback_prompt(source_note)
                 copy["answer"] = ""
 
         patched.append(copy)
@@ -125,6 +123,10 @@ def question_prompt_is_self_contained(prompt):
 
 def build_question_fallback_prompt(source_note):
     return f"根据这条原始笔记，核心结论是什么？\n原始笔记：{source_note}"
+
+
+def build_knowledge_fallback_prompt(source_note):
+    return source_note.strip()
 
 
 def normalize_items(bundle, items):
@@ -162,7 +164,7 @@ def validate_item_shape(bundle, parsed):
         raise RuntimeError("Provider output must contain an 'items' list.")
 
     max_note_index = len(bundle["notes"])
-    allowed_modes = {"question", "raw_note", "fact"}
+    allowed_modes = {"question", "knowledge"}
     seen_pairs = set()
 
     for index, item in enumerate(items, start=1):
@@ -185,10 +187,8 @@ def validate_item_shape(bundle, parsed):
 
         if bundle["mode"] == "question" and presentation_mode != "question":
             raise RuntimeError(f"Item #{index} must be question mode for this request.")
-        if bundle["mode"] == "raw_note" and presentation_mode != "raw_note":
-            raise RuntimeError(f"Item #{index} must be raw_note mode for this request.")
-        if bundle["mode"] == "fact" and presentation_mode != "fact":
-            raise RuntimeError(f"Item #{index} must be fact mode for this request.")
+        if bundle["mode"] == "knowledge" and presentation_mode != "knowledge":
+            raise RuntimeError(f"Item #{index} must be knowledge mode for this request.")
 
         if not isinstance(item["prompt"], str) or not item["prompt"].strip():
             raise RuntimeError(f"Item #{index} has an empty prompt.")
