@@ -9,6 +9,19 @@ import urllib.request
 
 DEFAULT_PROVIDER = "deepseek"
 
+PROVIDER_DEFAULTS = {
+    "deepseek": {
+        "default_model": "deepseek-chat",
+        "default_base_url": "https://api.deepseek.com/chat/completions",
+        "label": "DeepSeek",
+    },
+    "openai": {
+        "default_model": "gpt-5-mini",
+        "default_base_url": "https://api.openai.com/v1/chat/completions",
+        "label": "OpenAI",
+    },
+}
+
 
 def extract_json_object(text):
     stripped = text.strip()
@@ -23,20 +36,40 @@ def get_provider():
     return os.environ.get("TEMORIZE_MODEL_PROVIDER", DEFAULT_PROVIDER).strip().lower()
 
 
-def ensure_runtime_ready():
+def get_runtime_config():
     provider = get_provider()
-    if provider == "deepseek":
-        if not os.environ.get("DEEPSEEK_API_KEY"):
-            raise RuntimeError("DEEPSEEK_API_KEY is not set in the environment.")
-        return provider
-    raise RuntimeError(f"Unsupported model provider '{provider}'.")
+    provider_defaults = PROVIDER_DEFAULTS.get(provider)
+    if provider_defaults is None:
+        raise RuntimeError(f"Unsupported model provider '{provider}'.")
+
+    api_key = os.environ.get("TEMORIZE_API_KEY")
+    if not api_key:
+        raise RuntimeError("TEMORIZE_API_KEY is not set in the environment.")
+
+    return {
+        "provider": provider,
+        "label": provider_defaults["label"],
+        "api_key": api_key,
+        "model": os.environ.get("TEMORIZE_MODEL", provider_defaults["default_model"]),
+        "base_url": os.environ.get(
+            "TEMORIZE_API_BASE_URL",
+            provider_defaults["default_base_url"],
+        ),
+    }
+
+
+def ensure_runtime_ready():
+    config = get_runtime_config()
+    return config["provider"]
 
 
 def call_json_task(system_prompt, user_payload):
-    provider = ensure_runtime_ready()
-    if provider == "deepseek":
-        return _call_deepseek_json(system_prompt, user_payload)
-    raise RuntimeError(f"Unsupported model provider '{provider}'.")
+    config = get_runtime_config()
+    if config["provider"] == "deepseek":
+        return _call_chat_completions_json(config, system_prompt, user_payload)
+    if config["provider"] == "openai":
+        return _call_chat_completions_json(config, system_prompt, user_payload)
+    raise RuntimeError(f"Unsupported model provider '{config['provider']}'.")
 
 
 def generate_recall_items(bundle, system_prompt):
@@ -65,13 +98,9 @@ def suggest_topics(existing_topics, items, system_prompt):
     return call_json_task(system_prompt, user_payload)
 
 
-def _call_deepseek_json(system_prompt, user_payload):
-    model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
-    url = os.environ.get("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com/chat/completions")
-    api_key = os.environ["DEEPSEEK_API_KEY"]
-
+def _call_chat_completions_json(config, system_prompt, user_payload):
     payload = {
-        "model": model,
+        "model": config["model"],
         "temperature": 0.2,
         "messages": [
             {"role": "system", "content": system_prompt},
@@ -80,11 +109,11 @@ def _call_deepseek_json(system_prompt, user_payload):
     }
 
     request = urllib.request.Request(
-        url,
+        config["base_url"],
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {config['api_key']}",
         },
         method="POST",
     )
@@ -94,7 +123,9 @@ def _call_deepseek_json(system_prompt, user_payload):
             body = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"DeepSeek API request failed: {exc.code} {detail}") from exc
+        raise RuntimeError(
+            f"{config['label']} API request failed: {exc.code} {detail}"
+        ) from exc
 
     content = body["choices"][0]["message"]["content"]
     return extract_json_object(content)

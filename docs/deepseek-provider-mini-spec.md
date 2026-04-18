@@ -122,7 +122,8 @@ The provider prompt should instruct DeepSeek to:
 ## Secret Handling
 
 - API key must only come from local environment variables
-- recommended variable name: `DEEPSEEK_API_KEY`
+- runtime-facing variable name: `TEMORIZE_API_KEY`
+- provider selection variable name: `TEMORIZE_MODEL_PROVIDER`
 - repo may contain setup guidance only
 - repo must not contain any real key value
 
@@ -143,7 +144,7 @@ The provider prompt should instruct DeepSeek to:
 The next implementation step should be a tiny provider demo that:
 
 - reads local input notes
-- reads `DEEPSEEK_API_KEY` from the environment
+- reads provider credentials from the runtime environment
 - calls DeepSeek once
 - writes schema-compatible JSON
 - can be used in place of `data/fake_items.json` for a manual test run

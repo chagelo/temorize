@@ -186,18 +186,34 @@ This is the current foundation for later features such as replay avoidance, topi
 
 ## Provider and Secrets
 
-The provider currently uses DeepSeek.
+The runtime is now provider-aware. Current supported backends:
+- `deepseek`
+- `openai`
 
-Required environment variable:
+Required environment variables:
 
 ```bash
-export DEEPSEEK_API_KEY="your_key"
+export TEMORIZE_MODEL_PROVIDER="deepseek"
+export TEMORIZE_API_KEY="your_key"
 ```
 
 Optional environment variables:
-- `TEMORIZE_MODEL_PROVIDER` (`deepseek` for now)
-- `DEEPSEEK_MODEL`
-- `DEEPSEEK_API_BASE_URL`
+- `TEMORIZE_MODEL`
+- `TEMORIZE_API_BASE_URL`
+
+Examples:
+
+```bash
+# DeepSeek
+export TEMORIZE_MODEL_PROVIDER="deepseek"
+export TEMORIZE_MODEL="deepseek-chat"
+export TEMORIZE_API_KEY="your_deepseek_key"
+
+# OpenAI
+export TEMORIZE_MODEL_PROVIDER="openai"
+export TEMORIZE_MODEL="gpt-5-mini"
+export TEMORIZE_API_KEY="your_openai_key"
+```
 
 Never commit real keys into the repo.
 
