@@ -10,7 +10,9 @@
 - `data/example_local_notes.md`: example local note file for source-adapter testing
 - `data/example_vault/`: example markdown vault for directory-adapter testing
 - `recall.py`: minimal CLI demo
+- `temorize.py`: SQLite-backed local ingest/run workflow
 - `provider/local_notes_to_input.py`: local markdown/text note-source adapter
+- `storage.py`: local SQLite schema and storage helpers
 
 ## Quick Run
 
@@ -31,6 +33,39 @@ python3 run_demo.py \
 ```
 
 The runner keeps most intermediate paths and provider defaults internal. If you still want the lower-level dev chain, it remains available below.
+
+## SQLite Workflow
+
+The next-step workflow stores generated items locally instead of regenerating them on every run.
+
+Ingest one file or directory into the local SQLite store:
+
+```bash
+python3 temorize.py add \
+  --source-file data/example_local_notes.md \
+  --mode mixed
+```
+
+Topic assignment now has two paths:
+- if you pass `--topic` (and optionally `--topic-display-name`), all ingested items are attached to that controlled topic
+- if you omit `--topic`, the system asks the model to suggest topic assignments from the existing topic list, then stores the resolved result in the local topic table
+
+Automatic topic assignment is controlled, not free-form:
+- existing active topics are reused first when the suggested slug already matches
+- new model-suggested topics are created as `candidate` topics, not directly promoted to formal active topics
+- item records store both the normalized topic ids and a denormalized display label for the current session UI
+
+Then run a session from local storage:
+
+```bash
+python3 temorize.py run --mode mixed --max-items 5
+```
+
+By default the SQLite database lives at:
+
+```text
+~/.temorize/temorize.db
+```
 
 ## Runner Parameters
 

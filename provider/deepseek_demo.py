@@ -43,6 +43,34 @@ Rules:
 """
 
 
+TOPIC_ASSIGNMENT_SYSTEM_PROMPT = """You assign recall items into a controlled topic tree.
+
+Return JSON only in the form:
+{
+  "assignments": [
+    {
+      "item_id": "...",
+      "primary_topic": "...",
+      "secondary_topic": "...",
+      "use_existing_primary": true,
+      "use_existing_secondary": true
+    }
+  ]
+}
+
+Rules:
+- Prefer existing topics whenever a reasonable match exists.
+- Do not create near-duplicate topics if an existing topic is already close enough.
+- Keep topic names concise and stable.
+- Use at most two levels:
+  - primary_topic is required
+  - secondary_topic may be empty
+- If an item does not need a second-level topic, return an empty string for secondary_topic.
+- Return one assignment per item.
+- Return valid JSON only. No markdown fences.
+"""
+
+
 DEICTIC_PROMPT_RE = re.compile(r"^\s*(为什么)?\s*(这里|这段|这个|这条|这句|该处|上述|上面)")
 
 
@@ -65,6 +93,44 @@ def extract_json_object(text):
         stripped = re.sub(r"\n?```$", "", stripped)
         stripped = stripped.strip()
     return json.loads(stripped)
+
+
+def call_chat_model(system_prompt, user_payload):
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    if not api_key:
+        raise RuntimeError("DEEPSEEK_API_KEY is not set in the environment.")
+
+    model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+    url = os.environ.get("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com/chat/completions")
+
+    payload = {
+        "model": model,
+        "temperature": 0.2,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+        ],
+    }
+
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(request) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"DeepSeek API request failed: {exc.code} {detail}") from exc
+
+    content = body["choices"][0]["message"]["content"]
+    return extract_json_object(content)
 
 
 def sanitize_topic(topic):
@@ -209,47 +275,13 @@ def validate_item_shape(bundle, parsed):
 
 
 def call_deepseek(bundle):
-    api_key = os.environ.get("DEEPSEEK_API_KEY")
-    if not api_key:
-        raise RuntimeError("DEEPSEEK_API_KEY is not set in the environment.")
-
-    model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
-    url = os.environ.get("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com/chat/completions")
-
     user_payload = {
         "topic": bundle["topic"],
         "topic_display_name": bundle["topic_display_name"],
         "mode": bundle["mode"],
         "notes": bundle["notes"],
     }
-    payload = {
-        "model": model,
-        "temperature": 0.2,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-        ],
-    }
-
-    request = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(request) as response:
-            body = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"DeepSeek API request failed: {exc.code} {detail}") from exc
-
-    content = body["choices"][0]["message"]["content"]
-    parsed = extract_json_object(content)
+    parsed = call_chat_model(SYSTEM_PROMPT, user_payload)
     if not isinstance(parsed, dict):
         raise RuntimeError("Provider output must be a JSON object.")
 
@@ -262,6 +294,54 @@ def call_deepseek(bundle):
 
     items = validate_item_shape(bundle, {"items": apply_minimal_fallbacks(bundle, raw_items)})
     return normalize_items(bundle, items)
+
+
+def suggest_topics_for_items(existing_topics, items):
+    user_payload = {
+        "existing_topics": existing_topics,
+        "items": [
+            {
+                "item_id": item["id"],
+                "item_type": item["presentation_mode"],
+                "prompt": item["prompt"],
+                "answer": item.get("answer", ""),
+            }
+            for item in items
+        ],
+    }
+    parsed = call_chat_model(TOPIC_ASSIGNMENT_SYSTEM_PROMPT, user_payload)
+    if not isinstance(parsed, dict):
+        raise RuntimeError("Topic assignment output must be a JSON object.")
+
+    assignments = parsed.get("assignments")
+    if not isinstance(assignments, list):
+        raise RuntimeError("Topic assignment output must contain an 'assignments' list.")
+
+    seen_item_ids = set()
+    normalized = {}
+    for index, assignment in enumerate(assignments, start=1):
+        if not isinstance(assignment, dict):
+            raise RuntimeError(f"Topic assignment #{index} is not a JSON object.")
+        item_id = assignment.get("item_id")
+        primary_topic = (assignment.get("primary_topic") or "").strip()
+        secondary_topic = (assignment.get("secondary_topic") or "").strip()
+        if not item_id:
+            raise RuntimeError(f"Topic assignment #{index} is missing item_id.")
+        if not primary_topic:
+            raise RuntimeError(f"Topic assignment #{index} is missing primary_topic.")
+        if item_id in seen_item_ids:
+            raise RuntimeError(f"Duplicate topic assignment for item_id '{item_id}'.")
+        seen_item_ids.add(item_id)
+        normalized[item_id] = {
+            "primary_topic": primary_topic,
+            "secondary_topic": secondary_topic,
+        }
+
+    for item in items:
+        if item["id"] not in normalized:
+            raise RuntimeError(f"Missing topic assignment for item_id '{item['id']}'.")
+
+    return normalized
 
 
 def main():
