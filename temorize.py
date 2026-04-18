@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
+import os
 import random
 import re
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
 from provider import deepseek_demo, local_notes_to_input
@@ -60,6 +65,32 @@ def parse_args():
     )
     run_parser.add_argument("--max-items", type=int, default=5, help="Maximum number of items to show.")
 
+    preview_parser = subparsers.add_parser(
+        "preview",
+        help="Run the local-note -> provider -> recall preview without storing items locally.",
+    )
+    preview_source_group = preview_parser.add_mutually_exclusive_group(required=True)
+    preview_source_group.add_argument("--source-file", help="Path to one local .md or .txt note file.")
+    preview_source_group.add_argument("--source-dir", help="Path to one local markdown directory or vault.")
+    preview_parser.add_argument("--subdir", help="Optional subdirectory under --source-dir.")
+    preview_parser.add_argument("--include-glob", help="Optional glob pattern under --source-dir.")
+    preview_parser.add_argument("--topic", help="Optional stable topic id for the extracted notes.")
+    preview_parser.add_argument("--topic-display-name", help="Optional user-facing topic label.")
+    preview_parser.add_argument(
+        "--mode",
+        choices=["question", "knowledge", "mixed"],
+        default="mixed",
+        help="Target generation mode for the extracted notes and preview session.",
+    )
+    preview_parser.add_argument("--max-items", type=int, default=5, help="Maximum number of items to show.")
+    preview_parser.add_argument("--max-notes", type=int, default=8, help="Maximum number of notes to extract.")
+    preview_parser.add_argument("--max-files", type=int, default=5, help="Maximum number of markdown files to scan in directory mode.")
+    preview_parser.add_argument(
+        "--show-generated",
+        action="store_true",
+        help="Print the generated item JSON before entering the preview session.",
+    )
+
     return parser.parse_args()
 
 
@@ -92,6 +123,18 @@ def build_provider_bundle(args):
     notes = local_notes_to_input.load_notes_from_paths(input_paths)
     bundle = local_notes_to_input.build_bundle(args, notes)
     return input_paths, bundle
+
+
+def generate_preview_items(args):
+    input_paths, bundles = build_provider_bundle(args)
+    generated_items = []
+    for bundle in bundles:
+        generated_items.extend(deepseek_demo.call_deepseek(bundle))
+    return input_paths, generated_items
+
+
+def run_command(cmd):
+    subprocess.run(cmd, check=True)
 
 
 def build_topic_assignments(conn, args, generated_items):
@@ -143,10 +186,7 @@ def resolve_topic_suggestion(conn, suggested_name, parent_id=None):
 
 def ingest_source(conn, args):
     args.user_provided_topic = bool(args.topic)
-    input_paths, bundles = build_provider_bundle(args)
-    generated_items = []
-    for bundle in bundles:
-        generated_items.extend(deepseek_demo.call_deepseek(bundle))
+    input_paths, generated_items = generate_preview_items(args)
 
     if not generated_items:
         raise RuntimeError("Provider did not generate any items.")
@@ -185,7 +225,7 @@ def print_header(index, total, item):
 
 
 def ask_question_item(item):
-    print("j: show  k: remembered  l: fuzzy  ;: forgot  -: lower  x: delete  q: quit")
+    print("j: show answer  n: remembered  f: forgot  l: lower priority  d: delete forever  q: quit")
     while True:
         try:
             action = input("> ").strip()
@@ -193,58 +233,50 @@ def ask_question_item(item):
             return "quit"
         if action == "q":
             return "quit"
-        if action == "-":
+        if action == "l":
             return "lower_priority"
-        if action == "x":
+        if action == "d":
             return "delete"
         if action == "j":
             print()
             print(item["answer"])
             print()
-            print("k: remembered  l: fuzzy  ;: forgot  -: lower  x: delete  q: quit")
+            print("n: remembered  f: forgot  l: lower priority  d: delete forever  q: quit")
             while True:
                 try:
                     result = input("> ").strip()
                 except EOFError:
                     return "quit"
-                if result == "k":
+                if result == "n":
                     return "positive"
-                if result == "l":
-                    return "neutral"
-                if result == ";":
+                if result == "f":
                     return "negative"
-                if result == "-":
+                if result == "l":
                     return "lower_priority"
-                if result == "x":
+                if result == "d":
                     return "delete"
                 if result == "q":
                     return "quit"
-        if action == "k":
+        if action == "n":
             return "positive"
-        if action == "l":
-            return "neutral"
-        if action == ";":
+        if action == "f":
             return "negative"
 
 
 def ask_knowledge_item():
-    print("j: next  k: useful  l: neutral  ;: skip  -: lower  x: delete  q: quit")
+    print("n: next  f: skip  l: lower priority  d: delete forever  q: quit")
     while True:
         try:
             action = input("> ").strip()
         except EOFError:
             return "quit"
-        if action == "j":
+        if action == "n":
             return "next"
-        if action == "k":
-            return "positive"
-        if action == "l":
-            return "neutral"
-        if action == ";":
+        if action == "f":
             return "negative"
-        if action == "-":
+        if action == "l":
             return "lower_priority"
-        if action == "x":
+        if action == "d":
             return "delete"
         if action == "q":
             return "quit"
@@ -255,7 +287,6 @@ def print_summary(shown, feedback_counts, topics_seen, lowered_count, deleted_co
     print("Session Summary")
     print(f"- total shown: {shown}")
     print(f"- positive: {feedback_counts['positive']}")
-    print(f"- neutral: {feedback_counts['neutral']}")
     print(f"- negative: {feedback_counts['negative']}")
     print(f"- lowered: {lowered_count}")
     print(f"- deleted: {deleted_count}")
@@ -273,7 +304,7 @@ def run_session(conn, args):
     shown = 0
     lowered_count = 0
     deleted_count = 0
-    feedback_counts = {"positive": 0, "neutral": 0, "negative": 0}
+    feedback_counts = {"positive": 0, "negative": 0}
     last_topic = None
     topics_seen = set()
 
@@ -315,8 +346,56 @@ def run_session(conn, args):
     return 0
 
 
+def preview_session(args):
+    if "DEEPSEEK_API_KEY" not in os.environ:
+        print("DEEPSEEK_API_KEY is not set in the environment.", file=sys.stderr)
+        return 1
+
+    input_paths, generated_items = generate_preview_items(args)
+    if not generated_items:
+        raise RuntimeError("Provider did not generate any items.")
+
+    with tempfile.TemporaryDirectory(prefix="temorize-preview-") as temp_dir:
+        temp_root = Path(temp_dir)
+        generated_items_path = temp_root / "generated_items.json"
+        generated_items_path.write_text(
+            json.dumps(generated_items, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+        if args.show_generated:
+            print()
+            print(generated_items_path.read_text(encoding="utf-8").rstrip())
+            print()
+
+        recall_cmd = [
+            sys.executable,
+            str(Path(__file__).parent / "recall.py"),
+            "--items-file",
+            str(generated_items_path),
+            "--topics",
+            args.derived_topic,
+            "--mode",
+            args.mode,
+            "--max-items",
+            str(args.max_items),
+        ]
+        run_command(recall_cmd)
+
+    print()
+    print(f"Previewed {min(args.max_items, len(generated_items))} item(s) from {len(input_paths)} file(s).")
+    return 0
+
+
 def main():
     args = parse_args()
+    if args.command == "preview":
+        args.derived_topic = derive_topic(args)
+        args.derived_topic_display_name = derive_topic_display_name(args, args.derived_topic)
+        args.topic = args.derived_topic
+        args.topic_display_name = args.derived_topic_display_name
+        return preview_session(args)
+
     conn = connect(args.db_path)
     try:
         if args.command == "add":

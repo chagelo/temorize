@@ -2,20 +2,20 @@
 
 `temorize` is a terminal-native recall prototype for turning local notes into short recall sessions.
 
-The repo currently supports two workflows:
-- `run_demo.py`: quick end-to-end demo from local notes to a temporary session
-- `temorize.py`: SQLite-backed ingest and run workflow for local persistence
+The repo currently supports two main workflows through `temorize.py`:
+- `preview`: quick end-to-end demo from local notes to a temporary session
+- `add` / `run`: SQLite-backed ingest and run workflow for local persistence
 
 ## Main Workflows
 
-### 1. Quick Demo
+### 1. Preview
 
 Use this when you want to try the pipeline without storing items locally.
 
 Single file:
 
 ```bash
-python3 run_demo.py \
+python3 temorize.py preview \
   --source-file data/example_local_notes.md \
   --mode mixed
 ```
@@ -23,7 +23,7 @@ python3 run_demo.py \
 Directory / vault:
 
 ```bash
-python3 run_demo.py \
+python3 temorize.py preview \
   --source-dir data/example_vault \
   --subdir rust \
   --mode mixed \
@@ -114,25 +114,33 @@ Supported modes:
 
 Question items:
 - `j`: show answer
-- `k`: remembered
-- `l`: fuzzy
-- `;`: forgot
-- `-`: lower priority
-- `x`: delete forever
+- `n`: remembered
+- `f`: forgot
+- `l`: lower priority
+- `d`: delete forever
 - `q`: quit
 
 Knowledge items:
-- `j`: next
-- `k`: useful
-- `l`: neutral
-- `;`: skip
-- `-`: lower priority
-- `x`: delete forever
+- `n`: next
+- `f`: skip
+- `l`: lower priority
+- `d`: delete forever
 - `q`: quit
 
 ### `recall.py`
 
-The lower-level prototype CLI keeps the lighter key set without storage actions.
+The lower-level prototype CLI keeps the lighter key set without storage actions:
+
+Question items:
+- `j`: show answer
+- `n`: remembered
+- `f`: forgot
+- `q`: quit
+
+Knowledge items:
+- `n`: next
+- `f`: skip
+- `q`: quit
 
 ## Local Sources
 
@@ -224,7 +232,7 @@ python3 recall.py \
 
 - `temorize.py`: SQLite-backed ingest/run workflow
 - `storage.py`: local SQLite schema and storage helpers
-- `run_demo.py`: single-command demo runner
+- `run_demo.py`: compatibility wrapper that forwards to `temorize.py preview`
 - `recall.py`: lower-level prototype CLI
 - `provider/local_notes_to_input.py`: local note adapter
 - `provider/deepseek_demo.py`: provider + validation + topic suggestion logic

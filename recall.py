@@ -85,7 +85,7 @@ def print_header(index, total, item):
 
 
 def ask_question_item(item):
-    print("j: show  k: remembered  l: fuzzy  ;: forgot  q: quit")
+    print("j: show answer  n: remembered  f: forgot  q: quit")
     while True:
         try:
             action = input("> ").strip()
@@ -97,42 +97,34 @@ def ask_question_item(item):
             print()
             print(item["answer"])
             print()
-            print("k: remembered  l: fuzzy  ;: forgot  q: quit")
+            print("n: remembered  f: forgot  q: quit")
             while True:
                 try:
                     result = input("> ").strip()
                 except EOFError:
                     return "quit"
-                if result == "k":
+                if result == "n":
                     return "positive"
-                if result == "l":
-                    return "neutral"
-                if result == ";":
+                if result == "f":
                     return "negative"
                 if result == "q":
                     return "quit"
-        if action == "k":
+        if action == "n":
             return "positive"
-        if action == "l":
-            return "neutral"
-        if action == ";":
+        if action == "f":
             return "negative"
 
 
 def ask_knowledge_item():
-    print("j: next  k: useful  l: neutral  ;: skip  q: quit")
+    print("n: next  f: skip  q: quit")
     while True:
         try:
             action = input("> ").strip()
         except EOFError:
             return "quit"
-        if action == "j":
+        if action == "n":
             return "next"
-        if action == "k":
-            return "positive"
-        if action == "l":
-            return "neutral"
-        if action == ";":
+        if action == "f":
             return "negative"
         if action == "q":
             return "quit"
@@ -143,7 +135,6 @@ def print_summary(shown, feedback_counts, topics_seen):
     print("Session Summary")
     print(f"- total shown: {shown}")
     print(f"- positive: {feedback_counts['positive']}")
-    print(f"- neutral: {feedback_counts['neutral']}")
     print(f"- negative: {feedback_counts['negative']}")
     print(f"- topics covered: {', '.join(sorted(topics_seen)) if topics_seen else 'none'}")
 
@@ -181,7 +172,7 @@ def main():
     shown = 0
     last_topic = None
     topics_seen = set()
-    feedback_counts = {"positive": 0, "neutral": 0, "negative": 0}
+    feedback_counts = {"positive": 0, "negative": 0}
     feedback_log_entries = []
 
     while shown < args.max_items and remaining:
