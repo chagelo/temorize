@@ -2,11 +2,10 @@
 
 import argparse
 import json
-import os
 import re
-import urllib.error
-import urllib.request
 from pathlib import Path
+
+import llm_runtime
 
 
 SYSTEM_PROMPT = """You convert raw notes into recall items.
@@ -84,54 +83,6 @@ def parse_args():
 def load_input(path):
     with Path(path).open("r", encoding="utf-8") as fh:
         return json.load(fh)
-
-
-def extract_json_object(text):
-    stripped = text.strip()
-    if stripped.startswith("```"):
-        stripped = re.sub(r"^```[a-zA-Z0-9_-]*\n?", "", stripped)
-        stripped = re.sub(r"\n?```$", "", stripped)
-        stripped = stripped.strip()
-    return json.loads(stripped)
-
-
-def call_chat_model(system_prompt, user_payload):
-    api_key = os.environ.get("DEEPSEEK_API_KEY")
-    if not api_key:
-        raise RuntimeError("DEEPSEEK_API_KEY is not set in the environment.")
-
-    model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
-    url = os.environ.get("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com/chat/completions")
-
-    payload = {
-        "model": model,
-        "temperature": 0.2,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-        ],
-    }
-
-    request = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(request) as response:
-            body = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"DeepSeek API request failed: {exc.code} {detail}") from exc
-
-    content = body["choices"][0]["message"]["content"]
-    return extract_json_object(content)
-
 
 def sanitize_topic(topic):
     return re.sub(r"[^a-zA-Z0-9_-]+", "-", topic).strip("-").lower()
@@ -275,13 +226,7 @@ def validate_item_shape(bundle, parsed):
 
 
 def call_deepseek(bundle):
-    user_payload = {
-        "topic": bundle["topic"],
-        "topic_display_name": bundle["topic_display_name"],
-        "mode": bundle["mode"],
-        "notes": bundle["notes"],
-    }
-    parsed = call_chat_model(SYSTEM_PROMPT, user_payload)
+    parsed = llm_runtime.generate_recall_items(bundle, SYSTEM_PROMPT)
     if not isinstance(parsed, dict):
         raise RuntimeError("Provider output must be a JSON object.")
 
@@ -297,19 +242,7 @@ def call_deepseek(bundle):
 
 
 def suggest_topics_for_items(existing_topics, items):
-    user_payload = {
-        "existing_topics": existing_topics,
-        "items": [
-            {
-                "item_id": item["id"],
-                "item_type": item["presentation_mode"],
-                "prompt": item["prompt"],
-                "answer": item.get("answer", ""),
-            }
-            for item in items
-        ],
-    }
-    parsed = call_chat_model(TOPIC_ASSIGNMENT_SYSTEM_PROMPT, user_payload)
+    parsed = llm_runtime.suggest_topics(existing_topics, items, TOPIC_ASSIGNMENT_SYSTEM_PROMPT)
     if not isinstance(parsed, dict):
         raise RuntimeError("Topic assignment output must be a JSON object.")
 

@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import os
 import random
 import re
 import subprocess
@@ -10,6 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import llm_runtime
 from provider import deepseek_demo, local_notes_to_input
 from storage import (
     DEFAULT_DB_PATH,
@@ -347,8 +347,10 @@ def run_session(conn, args):
 
 
 def preview_session(args):
-    if "DEEPSEEK_API_KEY" not in os.environ:
-        print("DEEPSEEK_API_KEY is not set in the environment.", file=sys.stderr)
+    try:
+        llm_runtime.ensure_runtime_ready()
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
         return 1
 
     input_paths, generated_items = generate_preview_items(args)

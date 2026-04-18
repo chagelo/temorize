@@ -195,6 +195,7 @@ export DEEPSEEK_API_KEY="your_key"
 ```
 
 Optional environment variables:
+- `TEMORIZE_MODEL_PROVIDER` (`deepseek` for now)
 - `DEEPSEEK_MODEL`
 - `DEEPSEEK_API_BASE_URL`
 
@@ -231,6 +232,7 @@ python3 recall.py \
 ## Important Files
 
 - `temorize.py`: SQLite-backed ingest/run workflow
+- `llm_runtime.py`: thin model runtime abstraction, currently backed by DeepSeek
 - `storage.py`: local SQLite schema and storage helpers
 - `run_demo.py`: compatibility wrapper that forwards to `temorize.py preview`
 - `recall.py`: lower-level prototype CLI
