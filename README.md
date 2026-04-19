@@ -250,7 +250,6 @@ python3 recall.py \
 - `temorize.py`: SQLite-backed ingest/run workflow
 - `llm_runtime.py`: thin model runtime abstraction, currently backed by DeepSeek
 - `storage.py`: local SQLite schema and storage helpers
-- `run_demo.py`: compatibility wrapper that forwards to `temorize.py preview`
 - `recall.py`: lower-level prototype CLI
 - `provider/local_notes_to_input.py`: local note adapter
 - `provider/deepseek_demo.py`: provider + validation + topic suggestion logic
