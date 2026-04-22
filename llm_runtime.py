@@ -5,9 +5,12 @@ import os
 import re
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 
 DEFAULT_PROVIDER = "deepseek"
+LOCAL_ENV_PATH = Path(__file__).resolve().parent / ".env.local"
+_LOCAL_ENV_LOADED = False
 
 PROVIDER_DEFAULTS = {
     "deepseek": {
@@ -23,6 +26,32 @@ PROVIDER_DEFAULTS = {
 }
 
 
+def load_local_env():
+    global _LOCAL_ENV_LOADED
+    if _LOCAL_ENV_LOADED or not LOCAL_ENV_PATH.exists():
+        _LOCAL_ENV_LOADED = True
+        return
+
+    for raw_line in LOCAL_ENV_PATH.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export ") :].strip()
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
+
+    _LOCAL_ENV_LOADED = True
+
+
 def extract_json_object(text):
     stripped = text.strip()
     if stripped.startswith("```"):
@@ -33,6 +62,7 @@ def extract_json_object(text):
 
 
 def get_provider():
+    load_local_env()
     return os.environ.get("TEMORIZE_MODEL_PROVIDER", DEFAULT_PROVIDER).strip().lower()
 
 

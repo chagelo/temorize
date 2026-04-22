@@ -190,6 +190,13 @@ The runtime is now provider-aware. Current supported backends:
 - `deepseek`
 - `openai`
 
+The runtime will automatically load repo-local settings from `.env.local` if that file exists.
+The simplest local setup is:
+
+```bash
+cp .env.example .env.local
+```
+
 Required environment variables:
 
 ```bash
@@ -211,7 +218,7 @@ export TEMORIZE_API_KEY="your_deepseek_key"
 
 # OpenAI
 export TEMORIZE_MODEL_PROVIDER="openai"
-export TEMORIZE_MODEL="gpt-5-mini"
+export TEMORIZE_MODEL="gpt-5.4"
 export TEMORIZE_API_KEY="your_openai_key"
 ```
 
@@ -248,10 +255,8 @@ python3 recall.py \
 ## Important Files
 
 - `temorize.py`: SQLite-backed ingest/run workflow
-- `llm_runtime.py`: thin model runtime abstraction, currently backed by DeepSeek
+- `llm_runtime.py`: thin model runtime abstraction for DeepSeek/OpenAI backends
 - `storage.py`: local SQLite schema and storage helpers
 - `recall.py`: lower-level prototype CLI
 - `provider/local_notes_to_input.py`: local note adapter
 - `provider/deepseek_demo.py`: provider + validation + topic suggestion logic
-- `docs/terminal-recall-mvp-spec.md`: earlier MVP spec
-- `docs/deepseek-provider-mini-spec.md`: provider-oriented spec
